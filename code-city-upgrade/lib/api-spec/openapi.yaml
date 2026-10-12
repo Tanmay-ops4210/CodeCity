@@ -1,0 +1,373 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /demo:
+    get:
+      operationId: getCodeCityDemo
+      tags: [analysis]
+      summary: Return the deterministic Code City sample analysis
+      responses:
+        "200":
+          description: Sample project analysis, explicitly marked as demo data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectAnalysis"
+  /analyze:
+    post:
+      operationId: analyzeCodeCityUpload
+      tags: [analysis]
+      summary: Analyze a multi-language project ZIP archive
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/ArchiveUpload"
+      responses:
+        "200":
+          description: Static analysis results for the uploaded project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectAnalysis"
+        "400":
+          description: Invalid or unsafe archive
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+        "413":
+          description: Upload or archive exceeds a configured safety limit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    ErrorMessage:
+      type: object
+      properties:
+        detail:
+          type: string
+      required: [detail]
+    ArchiveUpload:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+      required: [file]
+    DecisionCounts:
+      type: object
+      properties:
+        conditionals: { type: integer }
+        loops: { type: integer }
+        exceptionHandlers: { type: integer }
+        booleanOperators: { type: integer }
+        comprehensionConditions: { type: integer }
+      required: [conditionals, loops, exceptionHandlers, booleanOperators, comprehensionConditions]
+    FunctionMetric:
+      type: object
+      properties:
+        name: { type: string }
+        qualifiedName: { type: string }
+        filePath: { type: string }
+        line: { type: integer }
+        lineStart: { type: integer }
+        lineEnd: { type: integer }
+        loc: { type: integer }
+        complexity: { type: integer }
+        complexityLevel:
+          type: string
+          enum: [low, medium, high]
+        isAsync: { type: boolean }
+        isNested: { type: boolean }
+        parametersCount: { type: integer }
+        nestingDepth: { type: integer }
+        conditionalBranches: { type: integer }
+        loops: { type: integer }
+        booleanOperators: { type: integer }
+        decisionDetails:
+          type: array
+          items: { type: string }
+      required: [name, line, complexity, isAsync]
+    FileAnalysis:
+      type: object
+      properties:
+        path: { type: string }
+        directory: { type: string }
+        filename: { type: string }
+        language: { type: string }
+        capabilities:
+          type: array
+          items: { type: string }
+        metricsUnavailable:
+          type: array
+          items: { type: string }
+        physicalLines: { type: [integer, "null"] }
+        loc: { type: [integer, "null"] }
+        blankLines: { type: [integer, "null"] }
+        commentLines: { type: [integer, "null"] }
+        sizeBytes: { type: integer }
+        relativeSize:
+          type: number
+          description: File byte size divided by the largest supported source file's byte size, from 0 to 1.
+        functions: { type: [integer, "null"] }
+        asyncFunctions: { type: [integer, "null"] }
+        classes: { type: [integer, "null"] }
+        complexity: { type: [integer, "null"] }
+        complexityLevel:
+          type: [string, "null"]
+          enum: [low, medium, high, null]
+        decisionCounts:
+          anyOf:
+            - $ref: "#/components/schemas/DecisionCounts"
+            - type: "null"
+        complexityReasons:
+          type: [array, "null"]
+          items: { type: string }
+        functionMetrics:
+          type: [array, "null"]
+          items:
+            $ref: "#/components/schemas/FunctionMetric"
+        nestingDepth: { type: [integer, "null"] }
+        imports:
+          type: [array, "null"]
+          items: { type: string }
+        analysisError:
+          type: ["string", "null"]
+      required: [path, directory, filename, language, capabilities, metricsUnavailable, physicalLines, loc, blankLines, commentLines, sizeBytes, relativeSize, functions, asyncFunctions, classes, complexity, complexityLevel, decisionCounts, complexityReasons, functionMetrics, nestingDepth, imports, analysisError]
+    DirectoryMetric:
+      type: object
+      properties:
+        path: { type: string }
+        files: { type: integer }
+        loc: { type: integer }
+        averageComplexity: { type: [number, "null"] }
+        languages:
+          type: array
+          items: { type: string }
+      required: [path, files, loc, averageComplexity, languages]
+    LanguageSummary:
+      type: object
+      properties:
+        language: { type: string }
+        files: { type: integer }
+        analyzedFiles: { type: integer }
+        loc: { type: integer }
+        filesWithComplexity: { type: integer }
+      required: [language, files, analyzedFiles, loc, filesWithComplexity]
+    AnalysisStats:
+      type: object
+      properties:
+        pythonFiles: { type: integer }
+        sourceFiles: { type: integer }
+        analyzedFiles: { type: integer }
+        languagesDetected: { type: integer }
+        filesWithLineMetrics: { type: integer }
+        filesWithComplexity: { type: integer }
+        filesWithFunctionMetrics: { type: integer }
+        filesWithClassMetrics: { type: integer }
+        parsingErrors: { type: integer }
+        filesWithUnavailableMetrics: { type: integer }
+        unavailableMetricCount: { type: integer }
+        filesByLanguage:
+          type: array
+          items:
+            $ref: "#/components/schemas/LanguageSummary"
+        totalLines: { type: integer }
+        linesOfCode: { type: integer }
+        functions: { type: [integer, "null"] }
+        asyncFunctions: { type: [integer, "null"] }
+        classes: { type: [integer, "null"] }
+        averageComplexity: { type: [number, "null"] }
+        highComplexityFiles: { type: integer }
+      required: [pythonFiles, sourceFiles, analyzedFiles, languagesDetected, filesWithLineMetrics, filesWithComplexity, filesWithFunctionMetrics, filesWithClassMetrics, parsingErrors, filesWithUnavailableMetrics, unavailableMetricCount, filesByLanguage, totalLines, linesOfCode, functions, asyncFunctions, classes, averageComplexity, highComplexityFiles]
+    DependencyNode:
+      type: object
+      properties:
+        id: { type: string }
+        label: { type: string }
+        nodeType:
+          type: string
+          enum: [file, package, external, standard_library]
+        language: { type: [string, "null"] }
+        path: { type: [string, "null"] }
+        loc: { type: [integer, "null"] }
+        complexity: { type: [number, "null"] }
+        incomingCount: { type: integer }
+        outgoingCount: { type: integer }
+      required: [id, label, nodeType, incomingCount, outgoingCount]
+    DependencyEdge:
+      type: object
+      properties:
+        source: { type: string }
+        target: { type: string }
+        dependencyType:
+          type: string
+          enum: [internal, external, standard_library, unresolved]
+        statement: { type: [string, "null"] }
+        resolved: { type: boolean }
+      required: [source, target, dependencyType, resolved]
+    DependencyCycle:
+      type: object
+      properties:
+        cycleId: { type: string }
+        files:
+          type: array
+          items: { type: string }
+        size: { type: integer }
+        paths:
+          type: array
+          items: { type: string }
+        edges:
+          type: array
+          items:
+            type: array
+            items: { type: string }
+        suggestedSteps:
+          type: array
+          items: { type: string }
+      required: [cycleId, files, size, paths]
+    DependencyGraph:
+      type: object
+      properties:
+        nodes:
+          type: array
+          items:
+            $ref: "#/components/schemas/DependencyNode"
+        edges:
+          type: array
+          items:
+            $ref: "#/components/schemas/DependencyEdge"
+        cycles:
+          type: array
+          items:
+            $ref: "#/components/schemas/DependencyCycle"
+        totalInternalEdges: { type: integer }
+        totalExternalEdges: { type: integer }
+        unresolvedDependencies:
+          type: array
+          items: { type: string }
+      required: [nodes, edges, cycles, totalInternalEdges, totalExternalEdges, unresolvedDependencies]
+    RefactoringFinding:
+      type: object
+      properties:
+        id: { type: string }
+        ruleId: { type: string }
+        ruleName: { type: string }
+        severity:
+          type: string
+          enum: [critical, warning, info]
+        filePath: { type: string }
+        language: { type: string }
+        functionName: { type: [string, "null"] }
+        lineStart: { type: [integer, "null"] }
+        lineEnd: { type: [integer, "null"] }
+        actualValue:
+          oneOf:
+            - { type: string }
+            - { type: number }
+        threshold:
+          oneOf:
+            - { type: string }
+            - { type: number }
+        issueExplanation: { type: string }
+        recommendation: { type: string }
+        targetType:
+          type: string
+          enum: [function, file, cycle, module]
+      required: [id, ruleId, ruleName, severity, filePath, language, actualValue, threshold, issueExplanation, recommendation, targetType]
+    RefactoringSummary:
+      type: object
+      properties:
+        findings:
+          type: array
+          items:
+            $ref: "#/components/schemas/RefactoringFinding"
+        totalFindings: { type: integer }
+        criticalCount: { type: integer }
+        warningCount: { type: integer }
+        infoCount: { type: integer }
+        ruleCounts:
+          type: object
+          additionalProperties: { type: integer }
+      required: [findings, totalFindings, criticalCount, warningCount, infoCount, ruleCounts]
+    ProjectAnalysis:
+      type: object
+      properties:
+        projectName: { type: string }
+        isDemo: { type: boolean }
+        summary: { type: string }
+        analyzedAt:
+          type: string
+          format: date-time
+        stats:
+          $ref: "#/components/schemas/AnalysisStats"
+        files:
+          type: array
+          items:
+            $ref: "#/components/schemas/FileAnalysis"
+        directories:
+          type: array
+          items:
+            $ref: "#/components/schemas/DirectoryMetric"
+        warnings:
+          type: array
+          items: { type: string }
+        manifests:
+          type: array
+          items: { type: string }
+        excludedDirectories:
+          type: array
+          items: { type: string }
+        languageCapabilities:
+          type: object
+          additionalProperties:
+            type: array
+            items: { type: string }
+        functions:
+          type: array
+          items:
+            $ref: "#/components/schemas/FunctionMetric"
+        dependencyGraph:
+          anyOf:
+            - $ref: "#/components/schemas/DependencyGraph"
+            - type: "null"
+        refactoringSummary:
+          anyOf:
+            - $ref: "#/components/schemas/RefactoringSummary"
+            - type: "null"
+      required: [projectName, isDemo, summary, analyzedAt, stats, files, directories, warnings, manifests, excludedDirectories, languageCapabilities]
+

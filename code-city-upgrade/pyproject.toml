@@ -1,0 +1,13 @@
+[project]
+name = "repl-nix-workspace"
+version = "0.1.0"
+description = "Interactive multi-language codebase complexity analysis and visualization."
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.143.0",
+    "pydantic>=2.14.0",
+    "python-multipart>=0.0.32",
+    "tree-sitter>=0.26.0",
+    "tree-sitter-language-pack>=1.21.3",
+    "uvicorn>=0.54.0",
+]

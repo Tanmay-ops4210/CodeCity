@@ -1,11 +1,9 @@
 # Dependencies
 node_modules/
-frontend/node_modules/
 .node_runtime/
 
 # Production build outputs
 dist/
-frontend/dist/
 build/
 
 # Python
@@ -33,3 +31,12 @@ Thumbs.db
 *.swp
 *.swo
 .env
+
+# Replit/Agents
+.agents/
+.replit
+.replitignore
+
+# Lock files (optional - uncomment to track)
+# pnpm-lock.yaml
+# uv.lock

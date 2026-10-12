@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Code City"
+description = "An interactive Python codebase analysis tool that turns real file metrics into an explorable code city, complexity dashboard, and hotspot explorer."
+version = "1.0.0"
+id = "artifacts/code-city"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21325
+
+[services.development]
+run = "pnpm --filter @workspace/code-city run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/code-city", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/code-city/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21325"
+BASE_PATH = "/"

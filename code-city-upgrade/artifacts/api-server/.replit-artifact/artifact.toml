@@ -1,0 +1,34 @@
+kind = "api"
+previewPath = "/api" # TODO - should be excluded from preview in the first place
+title = "API Server"
+version = "1.0.0"
+id = "3B4_FFSkEVBkAeYMFRJ2e"
+
+[[services]]
+localPort = 8080
+name = "API Server"
+paths = ["/api"]
+
+[services.development]
+run = "UV_PROJECT_ENVIRONMENT=.pythonlibs uv run --frozen --project ../.. uvicorn code_city.main:app --app-dir python --host 0.0.0.0 --port 8080"
+
+[services.production]
+
+[services.production.build]
+args = ["uv", "sync", "--frozen"]
+
+[services.production.build.env]
+NODE_ENV = "production"
+UV_PROJECT_ENVIRONMENT = ".pythonlibs"
+
+[services.production.run]
+# we don't run through pnpm to make startup faster in production
+args = ["uv", "run", "--frozen", "--project", "../..", "uvicorn", "code_city.main:app", "--app-dir", "python", "--host", "0.0.0.0", "--port", "8080"]
+
+[services.production.run.env]
+PORT = "8080"
+NODE_ENV = "production"
+UV_PROJECT_ENVIRONMENT = ".pythonlibs"
+
+[services.production.health.startup]
+path = "/api/healthz"
